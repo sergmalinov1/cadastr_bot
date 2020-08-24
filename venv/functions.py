@@ -4,6 +4,7 @@ import numpy as np
 import imutils
 import time
 from bs4 import BeautifulSoup
+import xlsxwriter
 
 ####### IMAGES TEMPLATE ######
 img_btn_show = cv2.imread('btn_show.png') #поиск кнопки поиска
@@ -13,6 +14,10 @@ img_detail_title = cv2.imread('detail_title.png') #поиск кнопки по�
 
 url_cadaster_search = "https://e.land.gov.ua/back/cadaster/"
 
+class pair():
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
 
 def get_screenshot():
     img = PG.screenshot()                           #делаем скриншот
@@ -129,19 +134,73 @@ def download_data(cadastr):
     PG.press('enter')
     time.sleep(0.6)
 
+def clean_spase(text):
+    temp = text.lstrip()
+    temp = temp.rstrip()
+    temp = temp.strip()
+    return temp
+
 
 def parser_html():
-    with open("1.html", "r") as f:
+
+    lists = [];
+    with open("123.html", "r") as f:
         contents = f.read()
 
         soup = BeautifulSoup(contents, 'lxml')
 
-        data = soup.find("table", class_="table-bordered")
+        table = soup.find('table', attrs={'class': 'table-bordered'})
 
-        for td_header in data.findAll(class_="td-header"):
-            td_header.decompose()  #удаляем лишние теги
+        for td_header in table.findAll(class_="td-header"):
+            td_header.decompose()  # удаляем лишние теги
 
-        for tr in data.findAll("tr"):
-            print(tr.select("td:nth-of-type(1)"))
-            print(tr.select("td:nth-of-type(2)"))
+        trs = table.find_all('tr')
+        for tr in trs:
+            tds = tr.find_all('td')
+
+
+            if((tds != []) & (len(tds) > 1)):
+                key = clean_spase(tds[0].text)
+                value = clean_spase(tds[1].text)
+
+                temp_p = pair(key, value)
+                lists.append(temp_p)
+    return  lists
+
+def generate_excel(list_value):
+    workbook = xlsxwriter.Workbook('hello.xlsx')
+    worksheet = workbook.add_worksheet()
+
+    row = 2
+    colum = 1
+    for data in list_value:
+        number_colum = (chr(ord('@') + colum))
+        worksheet.write(number_colum+"1", data.key)
+        worksheet.write(number_colum+"2", data.value)
+        colum = colum + 1
+    workbook.close()
+
+
+   # worksheet.write('A1', '')
+   # worksheet.write('B1', 'Geeks')
+   # worksheet.write('C1', 'For')
+   # worksheet.write('D1', 'Geeks')
+
+
+
+def old_parser():
+    data = soup.find("table", class_="table-bordered")
+
+    for td_header in data.findAll(class_="td-header"):
+        td_header.decompose()  #удаляем лишние теги
+
+
+
+    for tr in data.findAll("tr"):
+        td1 = tr.select("td:nth-of-type(1)").renderContents().strip()
+        td2 = tr.select("td:nth-of-type(2)")
+
+        if(td1 != []):
+            print(td1)
+
             print("---------")
